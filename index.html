@@ -801,7 +801,7 @@ const RPC_URL = 'https://devnet.helius-rpc.com/?api-key=416ace16-9026-46db-b076-
 const TOKEN_2022_PID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 const ASSOC_TOKEN_PID = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 const SYSVAR_RENT = 'SysvarRent111111111111111111111111111111111';
-const CONFIG_SEED = [99,111,110,102,105,103]; // "config"
+const CONFIG_SEED = [116,111,107,101,110,95,99,111,110,102,105,103]; // "token_config"
 
 const { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction,
         LAMPORTS_PER_SOL, ComputeBudgetProgram } = solanaWeb3;
@@ -1075,14 +1075,14 @@ function getATA(mint, owner) {
 
 /* Discriminators from IDL */
 const DISC = {
-  initialize:        [175,175,109,31,13,152,155,237],
-  initialize_token:  [31,234,128,40,70,183,255,75],
-  mint_initial_supply:[54,56,174,187,104,131,39,4],
-  mint_more:         [133,126,237,108,31,218,172,163],
-  burn_tokens:       [26,230,200,83,75,220,182,184],
-  revoke_mint_auth:  [218,134,110,165,93,252,64,26],
-  revoke_freeze_auth:[228,66,91,28,86,211,13,191],
-  revoke_update_auth:[169,61,43,190,224,227,175,179],
+  initialize_token:     [38,209,150,50,190,117,16,54],
+  mint_initial_supply:  [85,148,217,233,3,156,195,99],
+  mint_additional:      [66,131,5,152,38,186,230,31],
+  revoke_authority:     [233,254,239,15,49,183,105,21],
+  update_metadata:      [170,182,43,239,97,78,225,186],
+  freeze_token_account: [138,168,178,109,205,224,209,93],
+  thaw_token_account:   [199,172,96,93,244,252,137,171],
+  harvest_fees:         [90,149,158,241,163,186,155,202],
 };
 
 function encodeStr(str) {
@@ -1117,6 +1117,15 @@ async function createToken() {
   const revokeFreeze = document.getElementById('f-revoke-freeze').checked;
   const revokeUpdate = document.getElementById('f-revoke-update').checked;
 
+  // Gather social links
+  var website = '', twitter = '', telegram = '', discord = '';
+  socials.forEach(function(s) {
+    if(s.type === 'website') website = s.value;
+    if(s.type === 'twitter') twitter = s.value;
+    if(s.type === 'telegram') telegram = s.value;
+    if(s.type === 'discord') discord = s.value;
+  });
+
   if(!name || !symbol || !supply) {
     log('error','Validation','Please fill in Token Name, Symbol and Supply');
     return;
@@ -1131,16 +1140,17 @@ async function createToken() {
     const ata_pid = new PublicKey(ASSOC_TOKEN_PID);
     const rentPk = new PublicKey(SYSVAR_RENT);
 
-    const [configPda] = findPDA([new Uint8Array(CONFIG_SEED)], programId);
     const mintKp = solanaWeb3.Keypair.generate();
     const mint = mintKp.publicKey;
 
-    const [metaPda] = findPDA(
-      [new TextEncoder().encode('metadata'), mint.toBuffer()],
-      programId
-    );
+    // TokenConfig PDA: seeds = ["token_config", mint.key()]
+    const [configPda] = findPDA([new Uint8Array(CONFIG_SEED), mint.toBuffer()], programId);
 
-    /* TX1: initialize_token */
+    /* TX1: initialize_token
+       IDL account order: creator, fee_wallet, mint, token_config, token_program, system_program, rent
+       Params: InitializeTokenParams { name, symbol, uri, decimals, initial_supply, max_supply,
+                transfer_fee_bps, transfer_fee_max, website, twitter, telegram, discord }
+    */
     log('info','Step 1/2','Initializing token...');
     const data1 = new Uint8Array([
       ...DISC.initialize_token,
@@ -1148,21 +1158,26 @@ async function createToken() {
       ...encodeStr(symbol),
       ...encodeStr(uri || 'https://token.factory'),
       decimals,
-      ...encodeU16(fee),
-      ...encodeU64(maxFee * Math.pow(10, decimals)),
+      ...encodeU64(supply),           // initial_supply
+      ...encodeU64(0),                // max_supply (0 = uncapped)
+      ...encodeU16(fee),              // transfer_fee_bps
+      ...encodeU64(maxFee * Math.pow(10, decimals)),  // transfer_fee_max
+      ...encodeStr(website),
+      ...encodeStr(twitter),
+      ...encodeStr(telegram),
+      ...encodeStr(discord),
     ]);
 
     const ix1 = new TransactionInstruction({
       programId,
       keys:[
-        {pubkey:wallet, isSigner:true, isWritable:true},
-        {pubkey:mint, isSigner:true, isWritable:true},
-        {pubkey:metaPda, isSigner:false, isWritable:true},
-        {pubkey:feeWallet, isSigner:false, isWritable:true},
-        {pubkey:configPda, isSigner:false, isWritable:true},
-        {pubkey:t22, isSigner:false, isWritable:false},
-        {pubkey:SystemProgram.programId, isSigner:false, isWritable:false},
-        {pubkey:rentPk, isSigner:false, isWritable:false},
+        {pubkey:wallet, isSigner:true, isWritable:true},         // creator
+        {pubkey:feeWallet, isSigner:false, isWritable:true},     // fee_wallet
+        {pubkey:mint, isSigner:true, isWritable:true},           // mint
+        {pubkey:configPda, isSigner:false, isWritable:true},     // token_config
+        {pubkey:t22, isSigner:false, isWritable:false},          // token_program
+        {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}, // system_program
+        {pubkey:rentPk, isSigner:false, isWritable:false},       // rent
       ],
       data: Buffer.from ? Buffer.from(data1) : data1,
     });
@@ -1178,25 +1193,27 @@ async function createToken() {
     await connection.confirmTransaction(sig1, 'confirmed');
     log('success','Token Initialized', sig1.slice(0,20) + '...', 'https://solscan.io/tx/' + sig1 + '?cluster=devnet');
 
-    /* TX2: mint_initial_supply */
+    /* TX2: mint_initial_supply
+       IDL account order: creator, mint, token_config, creator_ata, token_program, associated_token_program, system_program
+       No params (supply comes from TokenConfig.initial_supply set in TX1)
+    */
     log('info','Step 2/2','Minting supply...');
     const userAta = getATA(mint, wallet);
-    const rawSupply = BigInt(supply) * BigInt(Math.pow(10, decimals));
 
     const data2 = new Uint8Array([
       ...DISC.mint_initial_supply,
-      ...encodeU64(rawSupply),
     ]);
 
     const ix2 = new TransactionInstruction({
       programId,
       keys:[
-        {pubkey:wallet, isSigner:true, isWritable:true},
-        {pubkey:mint, isSigner:false, isWritable:true},
-        {pubkey:userAta, isSigner:false, isWritable:true},
-        {pubkey:t22, isSigner:false, isWritable:false},
-        {pubkey:ata_pid, isSigner:false, isWritable:false},
-        {pubkey:SystemProgram.programId, isSigner:false, isWritable:false},
+        {pubkey:wallet, isSigner:true, isWritable:true},         // creator
+        {pubkey:mint, isSigner:false, isWritable:true},          // mint
+        {pubkey:configPda, isSigner:false, isWritable:true},     // token_config
+        {pubkey:userAta, isSigner:false, isWritable:true},       // creator_ata
+        {pubkey:t22, isSigner:false, isWritable:false},          // token_program
+        {pubkey:ata_pid, isSigner:false, isWritable:false},      // associated_token_program
+        {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}, // system_program
       ],
       data: Buffer.from ? Buffer.from(data2) : data2,
     });
@@ -1225,9 +1242,10 @@ async function createToken() {
     fetchOnChainTokens(); // refresh ticker with latest on-chain data
 
     /* Revocations */
-    if(revokeMint) await revokeAuth('mint', mint);
-    if(revokeFreeze) await revokeAuth('freeze', mint);
-    if(revokeUpdate) await revokeAuth('update', mint);
+    if(revokeMint || revokeFreeze || revokeUpdate) {
+      log('info','Revoking','Revoking authorities...');
+      await revokeAuth(mint, configPda, revokeMint, revokeFreeze, revokeUpdate);
+    }
 
     setBusy(false);
 
@@ -1237,27 +1255,26 @@ async function createToken() {
   }
 }
 
-async function revokeAuth(type, mint) {
+async function revokeAuth(mint, configPda, doMint, doFreeze, doUpdate) {
+  /* revoke_authority IDL accounts: creator, mint, token_config, token_program, system_program
+     Params: RevokeAuthorityParams { revoke_mint, revoke_freeze, revoke_update } — all bools */
   const programId = new PublicKey(PROGRAM_ID);
   const t22 = new PublicKey(TOKEN_2022_PID);
-  const discMap = {mint: DISC.revoke_mint_auth, freeze: DISC.revoke_freeze_auth, update: DISC.revoke_update_auth};
-  const data = new Uint8Array(discMap[type]);
 
-  let keys;
-  if(type === 'update') {
-    const [metaPda] = findPDA([new TextEncoder().encode('metadata'), mint.toBuffer()], programId);
-    keys = [
-      {pubkey:wallet, isSigner:true, isWritable:true},
-      {pubkey:metaPda, isSigner:false, isWritable:true},
-      {pubkey:t22, isSigner:false, isWritable:false},
-    ];
-  } else {
-    keys = [
-      {pubkey:wallet, isSigner:true, isWritable:true},
-      {pubkey:mint, isSigner:false, isWritable:true},
-      {pubkey:t22, isSigner:false, isWritable:false},
-    ];
-  }
+  const data = new Uint8Array([
+    ...DISC.revoke_authority,
+    doMint ? 1 : 0,
+    doFreeze ? 1 : 0,
+    doUpdate ? 1 : 0,
+  ]);
+
+  const keys = [
+    {pubkey:wallet, isSigner:true, isWritable:true},           // creator
+    {pubkey:mint, isSigner:false, isWritable:true},            // mint
+    {pubkey:configPda, isSigner:false, isWritable:true},       // token_config
+    {pubkey:t22, isSigner:false, isWritable:false},            // token_program
+    {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}, // system_program
+  ];
 
   const ix = new TransactionInstruction({programId, keys, data: Buffer.from ? Buffer.from(data) : data});
   let tx = new Transaction();
@@ -1267,7 +1284,11 @@ async function revokeAuth(type, mint) {
   const signed = await window.solana.signTransaction(tx);
   const sig = await connection.sendRawTransaction(signed.serialize());
   await connection.confirmTransaction(sig, 'confirmed');
-  log('success', type + ' authority revoked', '', 'https://solscan.io/tx/' + sig + '?cluster=devnet');
+  var revoked = [];
+  if(doMint) revoked.push('mint');
+  if(doFreeze) revoked.push('freeze');
+  if(doUpdate) revoked.push('update');
+  log('success', revoked.join(', ') + ' authority revoked', '', 'https://solscan.io/tx/' + sig + '?cluster=devnet');
 }
 
 /* ═══════════ LOAD / RENDER TOKENS ═══════════ */
@@ -1353,23 +1374,29 @@ async function executeAction(idx, action) {
   const t22 = new PublicKey(TOKEN_2022_PID);
   const ata_pid = new PublicKey(ASSOC_TOKEN_PID);
   const userAta = getATA(mint, wallet);
+  const [configPda] = findPDA([new Uint8Array(CONFIG_SEED), mint.toBuffer()], programId);
   const rawAmount = BigInt(amount) * BigInt(Math.pow(10, t.decimals || 9));
-  const disc = action === 'mint' ? DISC.mint_more : DISC.burn_tokens;
-  const data = new Uint8Array([...disc, ...encodeU64(rawAmount)]);
 
-  const keys = action === 'mint' ? [
-    {pubkey:wallet, isSigner:true, isWritable:true},
-    {pubkey:mint, isSigner:false, isWritable:true},
-    {pubkey:userAta, isSigner:false, isWritable:true},
-    {pubkey:t22, isSigner:false, isWritable:false},
-    {pubkey:ata_pid, isSigner:false, isWritable:false},
-    {pubkey:SystemProgram.programId, isSigner:false, isWritable:false},
-  ] : [
-    {pubkey:wallet, isSigner:true, isWritable:true},
-    {pubkey:mint, isSigner:false, isWritable:true},
-    {pubkey:userAta, isSigner:false, isWritable:true},
-    {pubkey:t22, isSigner:false, isWritable:false},
-  ];
+  var disc, keys;
+  if (action === 'mint') {
+    /* mint_additional: creator, mint, token_config, creator_ata, token_program, associated_token_program, system_program */
+    disc = DISC.mint_additional;
+    keys = [
+      {pubkey:wallet, isSigner:true, isWritable:true},
+      {pubkey:mint, isSigner:false, isWritable:true},
+      {pubkey:configPda, isSigner:false, isWritable:true},
+      {pubkey:userAta, isSigner:false, isWritable:true},
+      {pubkey:t22, isSigner:false, isWritable:false},
+      {pubkey:ata_pid, isSigner:false, isWritable:false},
+      {pubkey:SystemProgram.programId, isSigner:false, isWritable:false},
+    ];
+  } else {
+    /* burn — there's no burn instruction in IDL, use SPL Token-2022 burn directly */
+    log('error','Not Available','Burn is not yet implemented in the contract');
+    return;
+  }
+
+  const data = new Uint8Array([...disc, ...encodeU64(rawAmount)]);
 
   try {
     const ix = new TransactionInstruction({programId, keys, data: Buffer.from ? Buffer.from(data) : data});
@@ -1381,7 +1408,7 @@ async function executeAction(idx, action) {
     const signed = await window.solana.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
-    log('success', (action==='mint'?'Minted':'Burned') + ' ' + amount.toLocaleString() + ' tokens', '',
+    log('success', 'Minted ' + amount.toLocaleString() + ' tokens', '',
       'https://solscan.io/tx/' + sig + '?cluster=devnet');
     document.getElementById('inline-' + idx).innerHTML = '';
   } catch(e) {
@@ -1393,10 +1420,16 @@ async function revokeFromCard(idx, type) {
   if(!wallet) { await connectWallet(); if(!wallet) return; }
   const t = createdTokens[idx];
   const mint = new PublicKey(t.mint);
+  const programId = new PublicKey(PROGRAM_ID);
+  const [configPda] = findPDA([new Uint8Array(CONFIG_SEED), mint.toBuffer()], programId);
   try {
-    await revokeAuth(type, mint);
-    if(type === 'mint') createdTokens[idx].mintRevoked = true;
-    if(type === 'freeze') createdTokens[idx].freezeRevoked = true;
+    var doMint = type === 'mint';
+    var doFreeze = type === 'freeze';
+    var doUpdate = type === 'update';
+    await revokeAuth(mint, configPda, doMint, doFreeze, doUpdate);
+    if(doMint) createdTokens[idx].mintRevoked = true;
+    if(doFreeze) createdTokens[idx].freezeRevoked = true;
+    if(doUpdate) createdTokens[idx].updateRevoked = true;
     localStorage.setItem('tf_tokens', JSON.stringify(createdTokens));
     renderTokens();
   } catch(e) {
