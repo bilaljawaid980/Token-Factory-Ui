@@ -3,820 +3,687 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Token Factory — Solana</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<title>Token Factory — Solana Devnet</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#080b0f;
-  --surface:#0d1117;
-  --surface2:#131920;
-  --border:#1e2d3d;
-  --accent:#00ffa3;
-  --accent2:#7b61ff;
-  --accent3:#ff6b35;
-  --text:#e8f0fe;
+  --bg:#05080d;
+  --s1:#0a0f1a;
+  --s2:#0f1623;
+  --border:#1a2535;
+  --border2:#243347;
+  --accent:#00e5ff;
+  --accent2:#a855f7;
+  --green:#00ffa3;
+  --danger:#ff4757;
+  --warn:#ffa500;
+  --text:#dde6f0;
   --muted:#4a6080;
-  --danger:#ff4444;
-  --font-display:'Syne',sans-serif;
-  --font-mono:'Space Mono',monospace;
+  --muted2:#2a3d54;
+  --fm:'Outfit',sans-serif;
+  --fc:'JetBrains Mono',monospace;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,163,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,163,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;opacity:0.12;}
-.orb-1{width:600px;height:600px;background:var(--accent2);top:-200px;left:-200px;}
-.orb-2{width:400px;height:400px;background:var(--accent);bottom:-100px;right:-100px;}
-.container{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 24px;}
-header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:48px;}
-.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;}
-.logo{display:flex;align-items:center;gap:12px;}
-.logo-mark{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:var(--bg);font-size:18px;}
-.logo-text{font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-0.5px;}
-.logo-text span{color:var(--accent);}
-.network-badge{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:11px;color:var(--muted);letter-spacing:0.5px;}
-.network-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-#wallet-bar{margin-bottom:40px;}
-.wallet-connect-btn{width:100%;padding:16px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-family:var(--font-mono);font-size:13px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;text-transform:uppercase;}
-.wallet-connect-btn:hover{background:rgba(0,255,163,0.06);box-shadow:0 0 20px rgba(0,255,163,0.15);}
-.wallet-info{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;}
-.wallet-addr{font-size:12px;color:var(--accent);letter-spacing:0.5px;}
-.wallet-balance{font-size:12px;color:var(--muted);}
-.disconnect-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:6px 12px;cursor:pointer;transition:all 0.2s;}
-.disconnect-btn:hover{border-color:var(--danger);color:var(--danger);}
-.tabs{display:flex;gap:4px;margin-bottom:32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;}
-.tab{flex:1;padding:10px;background:transparent;border:none;border-radius:8px;color:var(--muted);font-family:var(--font-mono);font-size:11px;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase;}
-.tab.active{background:var(--surface2);color:var(--accent);border:1px solid var(--border);}
-.tab:hover:not(.active){color:var(--text);}
-.panel{display:none;}
-.panel.active{display:block;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden;}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:0.4;}
-.card-title{font-family:var(--font-display);font-size:16px;font-weight:600;margin-bottom:4px;letter-spacing:-0.3px;}
-.card-sub{font-size:11px;color:var(--muted);margin-bottom:24px;letter-spacing:0.3px;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-.form-grid.full{grid-template-columns:1fr;}
-.form-grid.three{grid-template-columns:1fr 1fr 1fr;}
-.field{display:flex;flex-direction:column;gap:6px;}
-.field label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-.field input,.field textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;transition:border-color 0.2s;width:100%;}
-.field input:focus,.field textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(123,97,255,0.1);}
-.field input::placeholder,.field textarea::placeholder{color:var(--muted);}
-.toggles{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;}
-.toggle-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;transition:all 0.2s;user-select:none;}
-.toggle-chip:hover{border-color:var(--accent2);}
-.toggle-chip.active{border-color:var(--accent);background:rgba(0,255,163,0.06);}
-.toggle-chip input{display:none;}
-.toggle-chip-label{font-size:11px;letter-spacing:0.5px;text-transform:uppercase;}
-.toggle-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background 0.2s;}
-.toggle-chip.active .toggle-dot{background:var(--accent);}
-.btn{padding:13px 24px;border-radius:10px;font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase;border:none;display:inline-flex;align-items:center;gap:8px;}
-.btn-primary{background:var(--accent);color:var(--bg);font-weight:700;width:100%;justify-content:center;}
-.btn-primary:hover{box-shadow:0 0 24px rgba(0,255,163,0.3);transform:translateY(-1px);}
-.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
-.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text);justify-content:center;}
-.btn-secondary:hover{border-color:var(--accent2);color:var(--accent2);}
-.spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,0.3);border-top-color:var(--bg);border-radius:50%;animation:spin 0.7s linear infinite;display:none;}
-@keyframes spin{to{transform:rotate(360deg)}}
-#status-log{position:fixed;bottom:24px;right:24px;width:380px;z-index:100;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
-.log-entry{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:11px;display:flex;align-items:flex-start;gap:10px;animation:slideIn 0.3s ease;pointer-events:all;transition:opacity 0.4s;}
-@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
-.log-entry.success{border-color:rgba(0,255,163,0.3);}
-.log-entry.error{border-color:rgba(255,68,68,0.3);}
-.log-entry.info{border-color:rgba(123,97,255,0.3);}
-.log-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
-.log-title{font-weight:700;margin-bottom:2px;letter-spacing:0.3px;}
-.log-entry.success .log-title{color:var(--accent);}
-.log-entry.error .log-title{color:var(--danger);}
-.log-entry.info .log-title{color:var(--accent2);}
-.log-msg{color:var(--muted);font-size:10px;line-height:1.4;word-break:break-all;}
-.log-link{color:var(--accent2);text-decoration:none;font-size:10px;margin-top:4px;display:block;}
-.log-link:hover{text-decoration:underline;}
-.token-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;transition:border-color 0.2s;}
-.token-card:hover{border-color:var(--accent2);}
-.token-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.token-name{font-family:var(--font-display);font-size:18px;font-weight:700;}
-.token-symbol{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--accent);letter-spacing:1px;}
-.token-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
-.stat{background:var(--surface2);border-radius:8px;padding:10px 12px;}
-.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-.stat-value{font-size:13px;color:var(--text);}
-.flags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.flag{font-size:10px;padding:4px 10px;border-radius:20px;letter-spacing:0.5px;}
-.flag.revoked{background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:#ff6b6b;}
-.flag.active-flag{background:rgba(0,255,163,0.08);border:1px solid rgba(0,255,163,0.3);color:var(--accent);}
-.token-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.empty{text-align:center;padding:60px 20px;color:var(--muted);}
-.empty-icon{font-size:40px;margin-bottom:12px;}
-.empty-text{font-size:12px;line-height:1.6;}
-.fee-note{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.fee-note span{color:var(--accent3);}
-.section-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr;}.form-grid.three{grid-template-columns:1fr 1fr;}#status-log{width:calc(100vw - 48px);left:24px;}}
+body{background:var(--bg);color:var(--text);font-family:var(--fc);min-height:100vh;overflow-x:hidden;}
 
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:380px;max-width:90vw;position:relative;}
-.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);border-radius:16px 16px 0 0;}
-.modal-title{font-family:var(--font-display);font-size:17px;font-weight:600;margin-bottom:6px;}
-.modal-sub{font-size:11px;color:var(--muted);margin-bottom:20px;}
-.modal-actions{display:flex;gap:10px;margin-top:20px;}
-.modal-actions .btn{flex:1;justify-content:center;}
+/* bg grid */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+
+/* orbs */
+.o1,.o2{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0;}
+.o1{width:500px;height:500px;background:var(--accent2);opacity:0.08;top:-150px;left:-100px;}
+.o2{width:400px;height:400px;background:var(--accent);opacity:0.06;bottom:-100px;right:-100px;}
+
+.wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:0 20px;}
+
+/* header */
+header{padding:28px 0 20px;border-bottom:1px solid var(--border);margin-bottom:40px;}
+.hrow{display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-weight:800;color:#000;font-size:14px;}
+.logo-txt{font-family:var(--fm);font-size:19px;font-weight:800;letter-spacing:-0.5px;}
+.logo-txt em{color:var(--accent);font-style:normal;}
+.badge{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:10px;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* wallet */
+#wbar{margin-bottom:36px;}
+.wbtn{width:100%;padding:14px;background:transparent;border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-family:var(--fc);font-size:12px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all 0.2s;}
+.wbtn:hover{background:rgba(0,229,255,0.06);box-shadow:0 0 20px rgba(0,229,255,0.12);}
+.winfo{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;}
+.waddr{font-size:11px;color:var(--accent);}
+.wbal{font-size:11px;color:var(--muted);margin-top:3px;}
+.wdis{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:var(--fc);font-size:10px;padding:5px 10px;cursor:pointer;transition:all 0.2s;}
+.wdis:hover{border-color:var(--danger);color:var(--danger);}
+
+/* tabs */
+.tabs{display:flex;gap:3px;margin-bottom:28px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:3px;}
+.tab{flex:1;padding:9px;background:transparent;border:none;border-radius:7px;color:var(--muted);font-family:var(--fc);font-size:10px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;text-transform:uppercase;}
+.tab.on{background:var(--s2);color:var(--accent);border:1px solid var(--border2);}
+.tab:hover:not(.on){color:var(--text);}
+.panel{display:none;}.panel.on{display:block;}
+
+/* cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden;}
+.card::after{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:0.3;}
+.ctitle{font-family:var(--fm);font-size:15px;font-weight:600;margin-bottom:3px;color:var(--text);}
+.csub{font-size:10px;color:var(--muted);margin-bottom:20px;letter-spacing:0.3px;}
+
+/* form */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.fg.f1{grid-template-columns:1fr;}
+.fg.f3{grid-template-columns:1fr 1fr 1fr;}
+.fld{display:flex;flex-direction:column;gap:5px;}
+.fld label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;}
+.fld input{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:var(--fc);font-size:11px;outline:none;transition:border-color 0.2s;width:100%;}
+.fld input:focus{border-color:var(--accent2);}
+.fld input::placeholder{color:var(--muted2);}
+
+/* toggles */
+.tgs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.tg{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;cursor:pointer;transition:all 0.2s;user-select:none;}
+.tg.on{border-color:var(--green);background:rgba(0,255,163,0.05);}
+.tg input{display:none;}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background 0.2s;}
+.tg.on .tdot{background:var(--green);}
+.tlbl{font-size:10px;letter-spacing:0.8px;text-transform:uppercase;}
+
+/* buttons */
+.btn{padding:12px 22px;border-radius:9px;font-family:var(--fc);font-size:11px;cursor:pointer;transition:all 0.2s;letter-spacing:0.8px;text-transform:uppercase;border:none;display:inline-flex;align-items:center;gap:7px;}
+.btn-p{background:var(--accent);color:#000;font-weight:700;width:100%;justify-content:center;}
+.btn-p:hover{box-shadow:0 0 24px rgba(0,229,255,0.25);transform:translateY(-1px);}
+.btn-p:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-s{background:transparent;border:1px solid var(--border2);color:var(--text);justify-content:center;}
+.btn-s:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-g{background:transparent;border:1px solid var(--green);color:var(--green);}
+.btn-g:hover{background:rgba(0,255,163,0.06);}
+.btn-d{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+.btn-d:hover{background:rgba(255,71,87,0.06);}
+.spin{width:13px;height:13px;border:2px solid rgba(0,0,0,0.2);border-top-color:#000;border-radius:50%;animation:sp 0.7s linear infinite;display:none;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* fee note */
+.fnote{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.fnote b{color:var(--warn);}
+
+/* token cards */
+.tcard{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:10px;transition:border-color 0.2s;}
+.tcard:hover{border-color:var(--border2);}
+.th{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.tname{font-family:var(--fm);font-size:17px;font-weight:700;}
+.tsym{background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:2px 9px;font-size:10px;color:var(--accent);letter-spacing:1px;}
+.tstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:var(--s2);border-radius:7px;padding:9px 11px;}
+.slbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.sval{font-size:12px;}
+.flags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+.flag{font-size:9px;padding:3px 9px;border-radius:20px;letter-spacing:0.5px;}
+.fr{background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.25);color:#ff6b7a;}
+.fa{background:rgba(0,255,163,0.07);border:1px solid rgba(0,255,163,0.25);color:var(--green);}
+.tacts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+.tacts .btn{font-size:10px;padding:8px 14px;}
+.tmint{font-size:8px;color:var(--muted);word-break:break-all;}
+
+/* inline amount input */
+.amount-row{display:none;align-items:center;gap:8px;margin-bottom:10px;padding:12px;background:var(--s2);border:1px solid var(--border2);border-radius:8px;}
+.amount-row.show{display:flex;}
+.amount-row input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--fc);font-size:11px;outline:none;}
+.amount-row input:focus{border-color:var(--accent);}
+.amount-row .albl{font-size:10px;color:var(--muted);white-space:nowrap;}
+
+/* empty */
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.ei{font-size:36px;margin-bottom:10px;}
+.et{font-size:11px;line-height:1.7;}
+
+/* section label */
+.slabel{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* toast */
+#toasts{position:fixed;bottom:20px;right:20px;width:360px;z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-size:10px;display:flex;align-items:flex-start;gap:9px;animation:tin 0.3s ease;pointer-events:all;transition:opacity 0.4s;}
+@keyframes tin{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok{border-color:rgba(0,255,163,0.3);}
+.toast.err{border-color:rgba(255,71,87,0.3);}
+.toast.inf{border-color:rgba(168,85,247,0.3);}
+.tico{font-size:13px;flex-shrink:0;margin-top:1px;}
+.ttitle{font-weight:700;margin-bottom:2px;}
+.toast.ok .ttitle{color:var(--green);}
+.toast.err .ttitle{color:var(--danger);}
+.toast.inf .ttitle{color:var(--accent2);}
+.tmsg{color:var(--muted);font-size:9px;line-height:1.5;word-break:break-all;}
+.tlink{color:var(--accent);text-decoration:none;font-size:9px;margin-top:3px;display:block;}
+
+@media(max-width:600px){.fg{grid-template-columns:1fr;}.fg.f3{grid-template-columns:1fr 1fr;}#toasts{width:calc(100vw - 40px);left:20px;}}
 </style>
 </head>
 <body>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="container">
+<div class="o1"></div><div class="o2"></div>
+<div class="wrap">
   <header>
-    <div class="header-inner">
+    <div class="hrow">
       <div class="logo">
-        <div class="logo-mark">TF</div>
-        <div class="logo-text">Token<span>Factory</span></div>
+        <div class="logo-box">TF</div>
+        <div class="logo-txt">Token<em>Factory</em></div>
       </div>
-      <div class="network-badge">
-        <div class="network-dot"></div>
-        Solana Devnet
-      </div>
+      <div class="badge"><div class="dot"></div>Solana Devnet</div>
     </div>
   </header>
 
-  <div id="wallet-bar">
-    <button class="wallet-connect-btn" onclick="connectWallet()">&#9189; Connect Phantom Wallet</button>
+  <div id="wbar">
+    <button class="wbtn" onclick="connectWallet()">Connect Phantom Wallet</button>
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('create',this)">Create Token</button>
-    <button class="tab" onclick="switchTab('manage',this)">My Tokens</button>
-    <button class="tab" onclick="switchTab('verify',this)">Verify On-Chain</button>
+    <button class="tab on" onclick="goTab('create',this)">Create Token</button>
+    <button class="tab" onclick="goTab('manage',this)">My Tokens</button>
+    <button class="tab" onclick="goTab('verify',this)">Verify On-Chain</button>
   </div>
 
   <!-- CREATE -->
-  <div id="panel-create" class="panel active">
-    <div class="fee-note">&#9889; Platform fee: <span>0.1 SOL</span> per token &nbsp;+&nbsp; ~0.02 SOL rent for mint account</div>
-
+  <div id="panel-create" class="panel on">
+    <div class="fnote">Platform fee: <b>0.1 SOL</b> per token &nbsp;+&nbsp; ~0.02 SOL rent for mint account</div>
     <div class="card">
-      <div class="card-title">Token Identity</div>
-      <div class="card-sub">Stored as on-chain metadata via Token-2022 MetadataExtension</div>
-      <div class="form-grid">
-        <div class="field"><label>Token Name *</label><input id="f-name" type="text" placeholder="My Awesome Token" maxlength="32"/></div>
-        <div class="field"><label>Symbol *</label><input id="f-symbol" type="text" placeholder="MAT" maxlength="10"/></div>
+      <div class="ctitle">Token Identity</div>
+      <div class="csub">Stored as on-chain metadata via Token-2022 MetadataExtension</div>
+      <div class="fg">
+        <div class="fld"><label>Token Name *</label><input id="fn" type="text" placeholder="My Token" maxlength="32"/></div>
+        <div class="fld"><label>Symbol *</label><input id="fs" type="text" placeholder="MTK" maxlength="10"/></div>
       </div>
-      <div class="form-grid full">
-        <div class="field"><label>Metadata URI *</label><input id="f-uri" type="text" placeholder="https://arweave.net/your-metadata.json"/></div>
+      <div class="fg f1">
+        <div class="fld"><label>Metadata URI *</label><input id="fu" type="text" placeholder="https://arweave.net/metadata.json"/></div>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Supply &amp; Economics</div>
-      <div class="card-sub">Supply is minted to your wallet. Transfer fee is collected on every on-chain transfer.</div>
-      <div class="form-grid three">
-        <div class="field"><label>Decimals</label><input id="f-decimals" type="number" value="6" min="0" max="9"/></div>
-        <div class="field"><label>Initial Supply *</label><input id="f-supply" type="number" placeholder="1000000"/></div>
-        <div class="field"><label>Max Supply (0=&#8734;)</label><input id="f-maxsupply" type="number" value="0"/></div>
+      <div class="ctitle">Supply &amp; Economics</div>
+      <div class="csub">Supply minted to your wallet. Transfer fee collected on every on-chain transfer.</div>
+      <div class="fg f3">
+        <div class="fld"><label>Decimals</label><input id="fd" type="number" value="6" min="0" max="9"/></div>
+        <div class="fld"><label>Initial Supply *</label><input id="fsu" type="number" placeholder="1000000"/></div>
+        <div class="fld"><label>Max Supply (0=unlimited)</label><input id="fms" type="number" value="0"/></div>
       </div>
-      <div class="form-grid">
-        <div class="field"><label>Transfer Fee Basis Pts</label><input id="f-feebps" type="number" value="0" min="0" max="10000" placeholder="100 = 1%"/></div>
-        <div class="field"><label>Max Fee Per Transfer</label><input id="f-feemax" type="number" value="0" placeholder="raw token units"/></div>
+      <div class="fg">
+        <div class="fld"><label>Transfer Fee Basis Pts (100=1%)</label><input id="ffb" type="number" value="0" min="0" max="10000"/></div>
+        <div class="fld"><label>Max Fee Per Transfer</label><input id="ffm" type="number" value="0"/></div>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Social Links</div>
-      <div class="card-sub">Stored as additional_metadata key-value pairs directly on the mint account</div>
-      <div class="form-grid">
-        <div class="field"><label>Website</label><input id="f-website" type="text" placeholder="https://yourproject.com"/></div>
-        <div class="field"><label>Twitter / X</label><input id="f-twitter" type="text" placeholder="https://twitter.com/yourproject"/></div>
-        <div class="field"><label>Telegram</label><input id="f-telegram" type="text" placeholder="https://t.me/yourproject"/></div>
-        <div class="field"><label>Discord</label><input id="f-discord" type="text" placeholder="https://discord.gg/yourproject"/></div>
+      <div class="ctitle">Social Links</div>
+      <div class="csub">Stored as additional_metadata key-value pairs on the mint account</div>
+      <div class="fg">
+        <div class="fld"><label>Website</label><input id="fw" type="text" placeholder="https://yourproject.com"/></div>
+        <div class="fld"><label>Twitter</label><input id="ft" type="text" placeholder="https://twitter.com/yourproject"/></div>
+        <div class="fld"><label>Telegram</label><input id="ftg" type="text" placeholder="https://t.me/yourproject"/></div>
+        <div class="fld"><label>Discord</label><input id="fdc" type="text" placeholder="https://discord.gg/yourproject"/></div>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Authority Settings</div>
-      <div class="card-sub">Optionally revoke authorities immediately after creation for maximum trust</div>
-      <div class="toggles">
-        <label class="toggle-chip" id="chip-mint" onclick="this.classList.toggle('active')">
-          <input type="checkbox" id="r-mint"/>
-          <div class="toggle-dot"></div>
-          <span class="toggle-chip-label">Revoke Mint</span>
-        </label>
-        <label class="toggle-chip" id="chip-freeze" onclick="this.classList.toggle('active')">
-          <input type="checkbox" id="r-freeze"/>
-          <div class="toggle-dot"></div>
-          <span class="toggle-chip-label">Revoke Freeze</span>
-        </label>
-        <label class="toggle-chip" id="chip-update" onclick="this.classList.toggle('active')">
-          <input type="checkbox" id="r-update"/>
-          <div class="toggle-dot"></div>
-          <span class="toggle-chip-label">Revoke Update</span>
-        </label>
+      <div class="ctitle">Authority Settings</div>
+      <div class="csub">Optionally revoke authorities after creation. Permanent and irreversible.</div>
+      <div class="tgs">
+        <label class="tg" id="cpm" onclick="this.classList.toggle('on')"><input type="checkbox"/><div class="tdot"></div><span class="tlbl">Revoke Mint</span></label>
+        <label class="tg" id="cpf" onclick="this.classList.toggle('on')"><input type="checkbox"/><div class="tdot"></div><span class="tlbl">Revoke Freeze</span></label>
+        <label class="tg" id="cpu" onclick="this.classList.toggle('on')"><input type="checkbox"/><div class="tdot"></div><span class="tlbl">Revoke Update</span></label>
       </div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.7;">
-        &#9888;&#65039; Revocation is permanent and cannot be undone. Revoking mint authority means no more tokens can ever be minted. This increases buyer trust significantly.
-      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.8;">Revoking mint authority means no more tokens can ever be minted. Increases buyer trust.</div>
     </div>
-
-    <button class="btn btn-primary" id="create-btn" onclick="createToken()">
-      <div class="spinner" id="create-spinner"></div>
-      <span id="create-label">&#9189; Deploy Token to Devnet</span>
+    <button class="btn btn-p" id="cbtn" onclick="createToken()">
+      <div class="spin" id="cspin"></div>
+      <span id="clbl">Deploy Token to Devnet</span>
     </button>
   </div>
 
   <!-- MANAGE -->
   <div id="panel-manage" class="panel">
     <div class="card">
-      <div class="card-title">Load Existing Token</div>
-      <div class="card-sub">Paste any mint address you created to load and manage it</div>
+      <div class="ctitle">Load Existing Token</div>
+      <div class="csub">Paste any mint address you own to load and manage it</div>
       <div style="display:flex;gap:10px;align-items:flex-end;">
-        <div class="field" style="flex:1;margin-bottom:0;">
-          <label>Mint Address</label>
-          <input id="load-mint" type="text" placeholder="Paste mint address..."/>
-        </div>
-        <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 20px;" onclick="loadToken()">Load Token</button>
+        <div class="fld" style="flex:1;margin-bottom:0;"><label>Mint Address</label><input id="lmint" type="text" placeholder="Paste mint address..."/></div>
+        <button class="btn btn-s" style="white-space:nowrap;padding:9px 18px;" onclick="loadToken()">Load</button>
       </div>
     </div>
-    <div id="tokens-list">
-      <div class="empty">
-        <div class="empty-icon">&#9672;</div>
-        <div class="empty-text">No tokens loaded this session.<br/>Create a token or load one above.</div>
-      </div>
+    <div id="tlist">
+      <div class="empty"><div class="ei">◈</div><div class="et">No tokens loaded.<br/>Create or load a token above.</div></div>
     </div>
   </div>
 
   <!-- VERIFY -->
   <div id="panel-verify" class="panel">
     <div class="card">
-      <div class="card-title">Verify Token On-Chain</div>
-      <div class="card-sub">Enter any mint address created by this program to inspect its TokenConfig PDA</div>
-      <div class="form-grid full" style="margin-bottom:16px;">
-        <div class="field"><label>Mint Address</label><input id="v-mint" type="text" placeholder="Token-2022 mint pubkey..."/></div>
+      <div class="ctitle">Verify Token On-Chain</div>
+      <div class="csub">Inspect any mint created by this program</div>
+      <div class="fg f1" style="margin-bottom:14px;">
+        <div class="fld"><label>Mint Address</label><input id="vmint" type="text" placeholder="Token-2022 mint pubkey..."/></div>
       </div>
-      <button class="btn btn-secondary" onclick="verifyToken()" style="width:100%;">&#9672; Fetch On-Chain Data</button>
+      <button class="btn btn-s" onclick="verifyToken()" style="width:100%;">Fetch On-Chain Data</button>
     </div>
-    <div id="verify-result"></div>
+    <div id="vres"></div>
   </div>
 </div>
 
-
-<div id="amount-modal" style="display:none;" class="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">Mint More Tokens</div>
-    <div class="modal-sub" id="modal-sub">Enter the amount of tokens (whole units)</div>
-    <div class="field">
-      <label id="modal-label">Amount</label>
-      <input id="modal-input" type="number" placeholder="e.g. 500000" min="1"/>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="modal-confirm-btn" onclick="confirmModal()">Confirm</button>
-    </div>
-  </div>
-</div>
-<div id="status-log"></div>
+<div id="toasts"></div>
 
 <script src="https://unpkg.com/@solana/web3.js@1.91.8/lib/index.iife.min.js"></script>
 <script>
-const PROGRAM_ID = '9UgZ4TDiiaMgu6ybgBne112k6xnb8AfMWwrr1e4hHUZZ';
-const PLATFORM_FEE_WALLET = '6RyiHzXdvrucGp332NML2xNrzTzBGqKGHjUdWzdsQdtW';
-const TOKEN_2022 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
-const ASSOC_PROG = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-const CONFIG_SEED = new Uint8Array([116,111,107,101,110,95,99,111,110,102,105,103]);
+var PROG    = '9UgZ4TDiiaMgu6ybgBne112k6xnb8AfMWwrr1e4hHUZZ';
+var FEE_W   = '6RyiHzXdvrucGp332NML2xNrzTzBGqKGHjUdWzdsQdtW';
+var T22     = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+var ASSOC   = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+var CSEED   = new Uint8Array([116,111,107,101,110,95,99,111,110,102,105,103]);
+var RPC     = 'https://devnet.helius-rpc.com/?api-key=416ace16-9026-46db-b076-e35b9eef5eaa';
 
-let wallet = null;
-let connection = null;
-let createdTokens = [];
+// Discriminators from IDL
+var DISC = {
+  initializeToken:  [38,209,150,50,190,117,16,54],
+  mintInitialSupply:[85,148,217,233,3,156,195,99],
+  mintAdditional:   [66,131,5,152,38,186,230,31],
+  revokeAuthority:  [233,254,239,15,49,183,105,21]
+};
 
-window.addEventListener('load', () => {
-  connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+var wallet = null;
+var conn   = null;
+var tokens = [];
+
+window.addEventListener('load', function() {
+  conn = new solanaWeb3.Connection(RPC, 'confirmed');
 });
 
-async function connectWallet() {
-  if (!window.solana || !window.solana.isPhantom) {
-    log('error','Phantom Not Found','Install Phantom from phantom.app first');
-    return;
-  }
-  try {
-    const resp = await window.solana.connect();
-    wallet = resp.publicKey;
-    await updateWalletUI();
-    log('success','Wallet Connected', wallet.toString().slice(0,8)+'...'+wallet.toString().slice(-6));
-  } catch(e) {
-    log('error','Connection Refused', e.message);
-  }
+// ── Wallet ──────────────────────────────────────────────────────
+function connectWallet() {
+  if (!window.solana || !window.solana.isPhantom) { toast('err','Phantom Not Found','Install from phantom.app'); return; }
+  window.solana.connect().then(function(r) {
+    wallet = r.publicKey;
+    refreshWalletUI();
+    toast('ok','Wallet Connected', wallet.toString().slice(0,8)+'...'+wallet.toString().slice(-6));
+  }).catch(function(e) { toast('err','Connection Failed', e.message); });
 }
 
 function disconnectWallet() {
   wallet = null;
-  document.getElementById('wallet-bar').innerHTML = '<button class="wallet-connect-btn" onclick="connectWallet()">&#9189; Connect Phantom Wallet</button>';
+  document.getElementById('wbar').innerHTML = '<button class="wbtn" onclick="connectWallet()">Connect Phantom Wallet</button>';
 }
 
-async function updateWalletUI() {
-  let bal = '';
-  try {
-    const lamports = await connection.getBalance(wallet);
-    bal = (lamports/1e9).toFixed(4)+' SOL';
-  } catch(e){}
-  document.getElementById('wallet-bar').innerHTML = `
-    <div class="wallet-info">
-      <div>
-        <div class="wallet-addr">&#9672; ${wallet.toString().slice(0,10)}...${wallet.toString().slice(-8)}</div>
-        <div class="wallet-balance" style="margin-top:4px;">${bal}</div>
-      </div>
-      <button class="disconnect-btn" onclick="disconnectWallet()">Disconnect</button>
-    </div>`;
+function refreshWalletUI() {
+  conn.getBalance(wallet).then(function(l) {
+    document.getElementById('wbar').innerHTML =
+      '<div class="winfo"><div><div class="waddr">'+wallet.toString().slice(0,12)+'...'+wallet.toString().slice(-8)+'</div>'
+      +'<div class="wbal">'+(l/1e9).toFixed(4)+' SOL</div></div>'
+      +'<button class="wdis" onclick="disconnectWallet()">Disconnect</button></div>';
+  }).catch(function() {
+    document.getElementById('wbar').innerHTML =
+      '<div class="winfo"><div><div class="waddr">'+wallet.toString().slice(0,12)+'...'+wallet.toString().slice(-8)+'</div>'
+      +'<div class="wbal">Connected</div></div>'
+      +'<button class="wdis" onclick="disconnectWallet()">Disconnect</button></div>';
+  });
 }
 
-function switchTab(id, el) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('panel-'+id).classList.add('active');
-  if(id==='manage') renderTokenList();
+// ── Tabs ─────────────────────────────────────────────────────────
+function goTab(id, el) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+  el.classList.add('on');
+  document.getElementById('panel-'+id).classList.add('on');
+  if (id === 'manage') renderTokens();
 }
 
-async function getPDA(mintPubkey) {
-  const [pda] = await solanaWeb3.PublicKey.findProgramAddress(
-    [CONFIG_SEED, mintPubkey.toBytes()],
-    new solanaWeb3.PublicKey(PROGRAM_ID)
-  );
-  return pda;
+// ── Crypto helpers ────────────────────────────────────────────────
+function getPDA(mintPk) {
+  return solanaWeb3.PublicKey.findProgramAddress([CSEED, mintPk.toBytes()], new solanaWeb3.PublicKey(PROG)).then(function(r){ return r[0]; });
+}
+function getATA(mintPk, ownerPk) {
+  return solanaWeb3.PublicKey.findProgramAddress([ownerPk.toBytes(), new solanaWeb3.PublicKey(T22).toBytes(), mintPk.toBytes()], new solanaWeb3.PublicKey(ASSOC)).then(function(r){ return r[0]; });
 }
 
-async function getATA(mint, owner) {
-  const [ata] = await solanaWeb3.PublicKey.findProgramAddress(
-    [owner.toBytes(), new solanaWeb3.PublicKey(TOKEN_2022).toBytes(), mint.toBytes()],
-    new solanaWeb3.PublicKey(ASSOC_PROG)
-  );
-  return ata;
+function es(s){ var b=new TextEncoder().encode(s); var r=new Uint8Array(4+b.length); new DataView(r.buffer).setUint32(0,b.length,true); r.set(b,4); return r; }
+function e8(v){ var r=new Uint8Array(1); r[0]=v; return r; }
+function e16(v){ var r=new Uint8Array(2); new DataView(r.buffer).setUint16(0,v,true); return r; }
+function e64(v){ var r=new Uint8Array(8); new DataView(r.buffer).setBigUint64(0,BigInt(v),true); return r; }
+function eb(v){ return e8(v?1:0); }
+function cat(){
+  var a=Array.prototype.slice.call(arguments);
+  var n=a.reduce(function(s,x){return s+x.length;},0);
+  var o=new Uint8Array(n); var p=0;
+  a.forEach(function(x){o.set(x,p);p+=x.length;});
+  return o;
 }
 
-function encStr(s) {
-  const b = new TextEncoder().encode(s);
-  const buf = new Uint8Array(4+b.length);
-  new DataView(buf.buffer).setUint32(0,b.length,true);
-  buf.set(b,4);
-  return buf;
-}
-function encU8(v){const b=new Uint8Array(1);b[0]=v;return b;}
-function encU16(v){const b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,v,true);return b;}
-function encU64(v){const b=new Uint8Array(8);new DataView(b.buffer).setBigUint64(0,BigInt(v),true);return b;}
-function encBool(v){return encU8(v?1:0);}
-function concat(...arrays){
-  const total=arrays.reduce((s,a)=>s+a.length,0);
-  const out=new Uint8Array(total);
-  let off=0;
-  for(const a of arrays){out.set(a,off);off+=a.length;}
-  return out;
-}
-
-async function sendTx(instructions, extraSigners=[]) {
-  const {blockhash, lastValidBlockHeight} = await connection.getLatestBlockhash('confirmed');
-  const tx = new solanaWeb3.Transaction({recentBlockhash:blockhash,feePayer:wallet});
-  instructions.forEach(ix=>tx.add(ix));
-  if(extraSigners.length) tx.partialSign(...extraSigners);
-  const signed = await window.solana.signTransaction(tx);
-  let sig;
-  try {
-    sig = await connection.sendRawTransaction(signed.serialize(),{skipPreflight:true,maxRetries:3});
-  } catch(e) {
-    const m = e.message && e.message.match(/[1-9A-HJ-NP-Za-km-z]{87,88}/);
-    if(m) { sig = m[0]; }
-    else throw e;
-  }
-  await connection.confirmTransaction({signature:sig,blockhash,lastValidBlockHeight},'confirmed');
-  return sig;
-}
-
-async function createToken() {
-  if(!wallet){log('error','Not Connected','Connect Phantom wallet first');return;}
-
-  const name    = document.getElementById('f-name').value.trim();
-  const symbol  = document.getElementById('f-symbol').value.trim();
-  const uri     = document.getElementById('f-uri').value.trim();
-  const dec     = parseInt(document.getElementById('f-decimals').value)||6;
-  const supply  = parseInt(document.getElementById('f-supply').value)||0;
-  const maxsup  = parseInt(document.getElementById('f-maxsupply').value)||0;
-  const feebps  = parseInt(document.getElementById('f-feebps').value)||0;
-  const feemax  = parseInt(document.getElementById('f-feemax').value)||0;
-  const website = document.getElementById('f-website').value.trim();
-  const twitter = document.getElementById('f-twitter').value.trim();
-  const telegram= document.getElementById('f-telegram').value.trim();
-  const discord = document.getElementById('f-discord').value.trim();
-
-  if(!name||!symbol||!uri||!supply){log('error','Missing Fields','Name, symbol, URI, and supply are required');return;}
-
-  setBusy(true,'Deploying...');
-  log('info','Building Transaction','Preparing Token-2022 mint with extensions...');
-
-  try {
-    const mintKp = solanaWeb3.Keypair.generate();
-    const mint   = mintKp.publicKey;
-    const pda    = await getPDA(mint);
-    const ata    = await getATA(mint, wallet);
-
-    log('info','Accounts Ready','Mint: '+mint.toString().slice(0,12)+'...');
-
-    // Discriminator for initialize_token (Anchor sha256 hash)
-    const disc = new Uint8Array([38,209,150,50,190,117,16,54]);
-    const data = concat(
-      disc,
-      encStr(name), encStr(symbol), encStr(uri),
-      encU8(dec), encU64(supply), encU64(maxsup),
-      encU16(feebps), encU64(feemax),
-      encStr(website), encStr(twitter), encStr(telegram), encStr(discord)
-    );
-
-    const programId   = new solanaWeb3.PublicKey(PROGRAM_ID);
-    const tokenProg   = new solanaWeb3.PublicKey(TOKEN_2022);
-    const feeWallet   = new solanaWeb3.PublicKey(PLATFORM_FEE_WALLET);
-    const sysProg     = solanaWeb3.SystemProgram.programId;
-    const rentSysvar  = solanaWeb3.SYSVAR_RENT_PUBKEY;
-
-    const initIx = new solanaWeb3.TransactionInstruction({
-      programId,
-      keys:[
-        {pubkey:wallet,      isSigner:true,  isWritable:true},
-        {pubkey:feeWallet,   isSigner:false, isWritable:true},
-        {pubkey:mint,        isSigner:true,  isWritable:true},
-        {pubkey:pda,         isSigner:false, isWritable:true},
-        {pubkey:tokenProg,   isSigner:false, isWritable:false},
-        {pubkey:sysProg,     isSigner:false, isWritable:false},
-        {pubkey:rentSysvar,  isSigner:false, isWritable:false},
-      ],
-      data
-    });
-
-    const sig1 = await sendTx([initIx],[mintKp]);
-    log('success','Token Created!', name+' ('+symbol+')',`https://solscan.io/tx/${sig1}?cluster=devnet`);
-
-    // mint_initial_supply discriminator
-    const disc2 = new Uint8Array([85,148,217,233,3,156,195,99]);
-    const mintIx = new solanaWeb3.TransactionInstruction({
-      programId,
-      keys:[
-        {pubkey:wallet,     isSigner:true,  isWritable:true},
-        {pubkey:mint,       isSigner:false, isWritable:true},
-        {pubkey:pda,        isSigner:false, isWritable:true},
-        {pubkey:ata,        isSigner:false, isWritable:true},
-        {pubkey:tokenProg,  isSigner:false, isWritable:false},
-        {pubkey:new solanaWeb3.PublicKey(ASSOC_PROG), isSigner:false, isWritable:false},
-        {pubkey:sysProg,    isSigner:false, isWritable:false},
-      ],
-      data: disc2
-    });
-    const sig2 = await sendTx([mintIx]);
-    log('success','Supply Minted', supply.toLocaleString()+' '+symbol+' in your wallet');
-
-    // Handle revocations
-    const rMint   = document.getElementById('chip-mint').classList.contains('active');
-    const rFreeze = document.getElementById('chip-freeze').classList.contains('active');
-    const rUpdate = document.getElementById('chip-update').classList.contains('active');
-    if(rMint||rFreeze||rUpdate) {
-      const disc3 = new Uint8Array([233,254,239,15,49,183,105,21]);
-      const revokeIx = new solanaWeb3.TransactionInstruction({
-        programId,
-        keys:[
-          {pubkey:wallet,    isSigner:true,  isWritable:true},
-          {pubkey:mint,      isSigner:false, isWritable:true},
-          {pubkey:pda,       isSigner:false, isWritable:true},
-          {pubkey:tokenProg, isSigner:false, isWritable:false},
-          {pubkey:sysProg,   isSigner:false, isWritable:false},
-        ],
-        data: concat(disc3, encBool(rMint), encBool(rFreeze), encBool(rUpdate))
+// ── Send transaction ──────────────────────────────────────────────
+function sendTx(ixs, extra) {
+  extra = extra || [];
+  return conn.getLatestBlockhash('confirmed').then(function(bh) {
+    var tx = new solanaWeb3.Transaction({ recentBlockhash: bh.blockhash, feePayer: wallet });
+    ixs.forEach(function(ix){ tx.add(ix); });
+    if (extra.length) tx.partialSign.apply(tx, extra);
+    return window.solana.signTransaction(tx).then(function(signed) {
+      return conn.sendRawTransaction(signed.serialize(), { skipPreflight: true, maxRetries: 3 }).then(function(sig) {
+        return conn.confirmTransaction({ signature: sig, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight }, 'confirmed').then(function() {
+          return sig;
+        });
       });
-      await sendTx([revokeIx]);
-      log('success','Authorities Revoked','Token is now immutable');
-    }
-
-    createdTokens.push({mint:mint.toString(),pda:pda.toString(),ata:ata.toString(),name,symbol,decimals:dec,supply,maxsup,feeBps:feebps,mintRevoked:rMint,freezeRevoked:rFreeze,updateRevoked:rUpdate,sig:sig1});
-    log('success','All Done!','Token live on devnet',`https://solscan.io/token/${mint.toString()}?cluster=devnet`);
-    await updateWalletUI();
-
-  } catch(e) {
-    console.error(e);
-    log('error','Transaction Failed', e.message||e.toString());
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function verifyToken() {
-  const mintStr = document.getElementById('v-mint').value.trim();
-  if(!mintStr){log('error','Missing Input','Paste a mint address');return;}
-  try {
-    const mint = new solanaWeb3.PublicKey(mintStr);
-    const pda  = await getPDA(mint);
-    log('info','Fetching','Reading TokenConfig PDA from devnet...');
-    const acc  = await connection.getAccountInfo(pda);
-    if(!acc){
-      document.getElementById('verify-result').innerHTML=`<div class="card"><div style="color:var(--muted);font-size:12px;">No TokenConfig PDA found. Token was not created with this program, or address is wrong.</div></div>`;
-      return;
-    }
-    const d = acc.data;
-    let off=8;
-    const creator = new solanaWeb3.PublicKey(d.slice(off,off+32)).toString(); off+=32;
-    const mintAddr= new solanaWeb3.PublicKey(d.slice(off,off+32)).toString(); off+=32;
-    const decimals= d[off++];
-    const view = new DataView(d.buffer,d.byteOffset);
-    const initialSupply = Number(view.getBigUint64(off,true)); off+=8;
-    const maxSupply     = Number(view.getBigUint64(off,true)); off+=8;
-    const currentSupply = Number(view.getBigUint64(off,true)); off+=8;
-    const feeBps        = view.getUint16(off,true); off+=2;
-    const feeMax        = Number(view.getBigUint64(off,true)); off+=8;
-    const mintRevoked   = d[off++]===1;
-    const freezeRevoked = d[off++]===1;
-    const updateRevoked = d[off++]===1;
-
-    document.getElementById('verify-result').innerHTML=`
-      <div class="card">
-        <div class="card-title">TokenConfig PDA</div>
-        <div class="card-sub" style="word-break:break-all;">${pda.toString()}</div>
-        <div class="token-stats" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:20px;">
-          <div class="stat"><div class="stat-label">Decimals</div><div class="stat-value">${decimals}</div></div>
-          <div class="stat"><div class="stat-label">Current Supply</div><div class="stat-value">${currentSupply.toLocaleString()}</div></div>
-          <div class="stat"><div class="stat-label">Initial Supply</div><div class="stat-value">${initialSupply.toLocaleString()}</div></div>
-          <div class="stat"><div class="stat-label">Max Supply</div><div class="stat-value">${maxSupply===0?'Uncapped':maxSupply.toLocaleString()}</div></div>
-          <div class="stat"><div class="stat-label">Transfer Fee</div><div class="stat-value">${feeBps/100}%</div></div>
-          <div class="stat"><div class="stat-label">Max Fee</div><div class="stat-value">${feeMax||'None'}</div></div>
-        </div>
-        <div class="section-label">Authority Status</div>
-        <div class="flags">
-          <span class="flag ${mintRevoked?'revoked':'active-flag'}">${mintRevoked?'&#10007; Mint Revoked':'&#10003; Mint Active'}</span>
-          <span class="flag ${freezeRevoked?'revoked':'active-flag'}">${freezeRevoked?'&#10007; Freeze Revoked':'&#10003; Freeze Active'}</span>
-          <span class="flag ${updateRevoked?'revoked':'active-flag'}">${updateRevoked?'&#10007; Update Revoked':'&#10003; Update Active'}</span>
-        </div>
-        <div class="section-label">Accounts</div>
-        <div style="font-size:11px;color:var(--muted);line-height:2.2;">
-          <div>Creator: <span style="color:var(--accent2)">${creator.slice(0,16)}...${creator.slice(-8)}</span></div>
-          <div>Mint: <span style="color:var(--accent2)">${mintAddr.slice(0,16)}...${mintAddr.slice(-8)}</span></div>
-        </div>
-        <div style="margin-top:16px;display:flex;gap:12px;">
-          <a href="https://solscan.io/token/${mintAddr}?cluster=devnet" target="_blank" class="log-link">&#8599; View Token on Solscan</a>
-          <a href="https://solscan.io/account/${pda.toString()}?cluster=devnet" target="_blank" class="log-link">&#8599; View PDA Account</a>
-        </div>
-      </div>`;
-    log('success','Verified','TokenConfig PDA fetched successfully');
-  } catch(e) {
-    log('error','Verify Failed', e.message);
-  }
-}
-
-
-
-let modalCallback = null;
-
-function openModal(title, sub, label, btnText, callback) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-sub').textContent = sub;
-  document.getElementById('modal-label').textContent = label;
-  document.getElementById('modal-confirm-btn').textContent = btnText;
-  document.getElementById('modal-input').value = '';
-  document.getElementById('modal-input').focus();
-  document.getElementById('amount-modal').style.display = 'flex';
-  modalCallback = callback;
-  // Allow Enter key
-  document.getElementById('modal-input').onkeydown = (e) => { if(e.key==='Enter') confirmModal(); };
-}
-
-function closeModal() {
-  document.getElementById('amount-modal').style.display = 'none';
-  modalCallback = null;
-}
-
-function confirmModal() {
-  const val = document.getElementById('modal-input').value.trim();
-  if(!val || isNaN(val) || parseInt(val) <= 0) {
-    document.getElementById('modal-input').style.borderColor = 'var(--danger)';
-    return;
-  }
-  closeModal();
-  if(modalCallback) modalCallback(parseInt(val));
-}
-
-async function mintMore(mintAddr, pdaAddr, ataAddr) {
-  openModal(
-    'Mint More Tokens',
-    'Tokens will be minted to your wallet',
-    'Amount (whole units)',
-    'Mint Tokens',
-    async (amount) => {
-      log('info','Minting','Sending mint_additional transaction...');
-  try {
-    const programId = new solanaWeb3.PublicKey(PROGRAM_ID);
-    const mint      = new solanaWeb3.PublicKey(mintAddr);
-    const pda       = new solanaWeb3.PublicKey(pdaAddr);
-    const ata       = new solanaWeb3.PublicKey(ataAddr);
-    const tokenProg = new solanaWeb3.PublicKey(TOKEN_2022);
-    const assocProg = new solanaWeb3.PublicKey(ASSOC_PROG);
-    const sysProg   = solanaWeb3.SystemProgram.programId;
-
-    const disc = new Uint8Array([66,131,5,152,38,186,230,31]);
-    const data  = concat(disc, encU64(parseInt(amount)));
-
-    const ix = new solanaWeb3.TransactionInstruction({
-      programId,
-      keys:[
-        {pubkey:wallet,    isSigner:true,  isWritable:true},
-        {pubkey:mint,      isSigner:false, isWritable:true},
-        {pubkey:pda,       isSigner:false, isWritable:true},
-        {pubkey:ata,       isSigner:false, isWritable:true},
-        {pubkey:tokenProg, isSigner:false, isWritable:false},
-        {pubkey:assocProg, isSigner:false, isWritable:false},
-        {pubkey:sysProg,   isSigner:false, isWritable:false},
-      ],
-      data
     });
-
-    const sig = await sendTx([ix]);
-    log('success','Tokens Minted!', amount+' tokens added','https://solscan.io/tx/'+sig+'?cluster=devnet');
-
-    // Update local supply
-    const t = createdTokens.find(t=>t.mint===mintAddr);
-    if(t) { t.supply += parseInt(amount); renderTokenList(); }
-  } catch(e) {
-    log('error','Mint Failed', e.message||e.toString());
-  }
-  }); // end openModal callback
+  });
 }
 
-async function burnTokens(mintAddr, ataAddr) {
-  openModal(
-    'Burn Tokens',
-    'Tokens will be permanently destroyed from your wallet',
-    'Amount (whole units)',
-    'Burn Tokens',
-    async (amount) => {
-      log('info','Burning','Sending burn transaction...');
-  try {
-    const mint      = new solanaWeb3.PublicKey(mintAddr);
-    const ata       = new solanaWeb3.PublicKey(ataAddr);
-    const tokenProg = new solanaWeb3.PublicKey(TOKEN_2022);
+// ── Create Token ──────────────────────────────────────────────────
+function createToken() {
+  if (!wallet) { toast('err','Not Connected','Connect Phantom first'); return; }
+  var name=document.getElementById('fn').value.trim();
+  var sym=document.getElementById('fs').value.trim();
+  var uri=document.getElementById('fu').value.trim();
+  var dec=parseInt(document.getElementById('fd').value)||6;
+  var sup=parseInt(document.getElementById('fsu').value)||0;
+  var msup=parseInt(document.getElementById('fms').value)||0;
+  var fbps=parseInt(document.getElementById('ffb').value)||0;
+  var fmax=parseInt(document.getElementById('ffm').value)||0;
+  var web=document.getElementById('fw').value.trim();
+  var tw=document.getElementById('ft').value.trim();
+  var tg=document.getElementById('ftg').value.trim();
+  var dc=document.getElementById('fdc').value.trim();
+  if (!name||!sym||!uri||!sup) { toast('err','Missing Fields','Name, symbol, URI and supply required'); return; }
+  busy(true,'Deploying...');
+  toast('inf','Building Transaction','Preparing Token-2022 mint...');
 
-    // Token-2022 native burn instruction (discriminator = 8)
-    const t = createdTokens.find(t=>t.mint===mintAddr);
-    const decimals = t ? t.decimals : 6;
-    const rawAmount = BigInt(parseInt(amount)) * BigInt(10**decimals);
+  var mintKp = solanaWeb3.Keypair.generate();
+  var mint = mintKp.publicKey;
+  var pda, ata;
 
-    const data = new Uint8Array(9);
-    data[0] = 8; // BurnChecked instruction index
-    new DataView(data.buffer).setBigUint64(1, rawAmount, true);
-
-    const ix = new solanaWeb3.TransactionInstruction({
-      programId: tokenProg,
-      keys:[
-        {pubkey:ata,       isSigner:false, isWritable:true},
-        {pubkey:mint,      isSigner:false, isWritable:true},
-        {pubkey:wallet,    isSigner:true,  isWritable:false},
-      ],
-      data
-    });
-
-    const sig = await sendTx([ix]);
-    log('success','Tokens Burned!', amount+' tokens destroyed','https://solscan.io/tx/'+sig+'?cluster=devnet');
-
-    // Update local supply
-    if(t) { t.supply -= parseInt(amount); renderTokenList(); }
-  } catch(e) {
-    log('error','Burn Failed', e.message||e.toString());
-  }
-  }); // end openModal callback
-}
-
-
-async function loadToken() {
-  const mintStr = document.getElementById('load-mint').value.trim();
-  if(!mintStr){log('error','Missing Input','Paste a mint address');return;}
-  if(!wallet){log('error','Not Connected','Connect Phantom wallet first');return;}
-
-  // Check if already loaded
-  if(createdTokens.find(t=>t.mint===mintStr)){
-    log('info','Already Loaded','This token is already in your list');
-    return;
-  }
-
-  log('info','Loading Token','Fetching on-chain data...');
-
-  try {
-    const mint = new solanaWeb3.PublicKey(mintStr);
-    const pda  = await getPDA(mint);
-    const ata  = await getATA(mint, wallet);
-
-    const acc = await connection.getAccountInfo(pda);
-    if(!acc){
-      log('error','Not Found','No TokenConfig PDA found. Was this token created with this program?');
-      return;
-    }
-
-    // Parse TokenConfig
-    const d    = acc.data;
-    const view = new DataView(d.buffer, d.byteOffset);
-    let off    = 8;
-    off += 32; // skip creator
-    off += 32; // skip mint
-    const decimals      = d[off++];
-    const initialSupply = Number(view.getBigUint64(off,true)); off+=8;
-    const maxSupply     = Number(view.getBigUint64(off,true)); off+=8;
-    const currentSupply = Number(view.getBigUint64(off,true)); off+=8;
-    const feeBps        = view.getUint16(off,true); off+=2;
-    const feeMax        = Number(view.getBigUint64(off,true)); off+=8;
-    const mintRevoked   = d[off++]===1;
-    const freezeRevoked = d[off++]===1;
-    const updateRevoked = d[off++]===1;
-
-    // Try to get token name from mint metadata
-    let name = 'Unknown Token';
-    let symbol = '???';
-    try {
-      const mintAcc = await connection.getAccountInfo(mint);
-      if(mintAcc) {
-        // Try to parse name from metadata extension
-        const raw = mintAcc.data;
-        const str = new TextDecoder().decode(raw);
-        // Look for readable strings in the metadata
-        const matches = str.match(/[A-Za-z][A-Za-z0-9 ]{2,30}/g);
-        if(matches && matches.length > 0) {
-          name = matches[0] || 'Loaded Token';
-          symbol = matches[1] || mintStr.slice(0,4).toUpperCase();
-        }
+  getPDA(mint).then(function(p){ pda=p; return getATA(mint,wallet); }).then(function(a){ ata=a;
+    toast('inf','Accounts Ready','Mint: '+mint.toString().slice(0,12)+'...');
+    var pid=new solanaWeb3.PublicKey(PROG);
+    var t22=new solanaWeb3.PublicKey(T22);
+    var fw=new solanaWeb3.PublicKey(FEE_W);
+    var sys=solanaWeb3.SystemProgram.programId;
+    var rent=solanaWeb3.SYSVAR_RENT_PUBKEY;
+    var disc=new Uint8Array(DISC.initializeToken);
+    var data=cat(disc,es(name),es(sym),es(uri),e8(dec),e64(sup),e64(msup),e16(fbps),e64(fmax),es(web),es(tw),es(tg),es(dc));
+    var ix=new solanaWeb3.TransactionInstruction({programId:pid,keys:[{pubkey:wallet,isSigner:true,isWritable:true},{pubkey:fw,isSigner:false,isWritable:true},{pubkey:mint,isSigner:true,isWritable:true},{pubkey:pda,isSigner:false,isWritable:true},{pubkey:t22,isSigner:false,isWritable:false},{pubkey:sys,isSigner:false,isWritable:false},{pubkey:rent,isSigner:false,isWritable:false}],data:data});
+    return sendTx([ix],[mintKp]);
+  }).then(function(sig1){
+    toast('ok','Token Created!',name+' ('+sym+')','https://solscan.io/tx/'+sig1+'?cluster=devnet');
+    var pid=new solanaWeb3.PublicKey(PROG);
+    var t22=new solanaWeb3.PublicKey(T22);
+    var ap=new solanaWeb3.PublicKey(ASSOC);
+    var sys=solanaWeb3.SystemProgram.programId;
+    var disc2=new Uint8Array(DISC.mintInitialSupply);
+    var ix2=new solanaWeb3.TransactionInstruction({programId:pid,keys:[{pubkey:wallet,isSigner:true,isWritable:true},{pubkey:mint,isSigner:false,isWritable:true},{pubkey:pda,isSigner:false,isWritable:true},{pubkey:ata,isSigner:false,isWritable:true},{pubkey:t22,isSigner:false,isWritable:false},{pubkey:ap,isSigner:false,isWritable:false},{pubkey:sys,isSigner:false,isWritable:false}],data:disc2});
+    return sendTx([ix2]).then(function(sig2){
+      toast('ok','Supply Minted',sup.toLocaleString()+' '+sym+' in your wallet');
+      var rM=document.getElementById('cpm').classList.contains('on');
+      var rF=document.getElementById('cpf').classList.contains('on');
+      var rU=document.getElementById('cpu').classList.contains('on');
+      if (rM||rF||rU) {
+        var pid2=new solanaWeb3.PublicKey(PROG);
+        var t222=new solanaWeb3.PublicKey(T22);
+        var sys2=solanaWeb3.SystemProgram.programId;
+        var disc3=new Uint8Array(DISC.revokeAuthority);
+        var ix3=new solanaWeb3.TransactionInstruction({programId:pid2,keys:[{pubkey:wallet,isSigner:true,isWritable:true},{pubkey:mint,isSigner:false,isWritable:true},{pubkey:pda,isSigner:false,isWritable:true},{pubkey:t222,isSigner:false,isWritable:false},{pubkey:sys2,isSigner:false,isWritable:false}],data:cat(disc3,eb(rM),eb(rF),eb(rU))});
+        return sendTx([ix3]).then(function(){
+          toast('ok','Authorities Revoked','Token is now immutable');
+          return {sig:sig2,rM:rM,rF:rF,rU:rU};
+        });
       }
-    } catch(e) {}
-
-    createdTokens.push({
-      mint: mintStr,
-      pda: pda.toString(),
-      ata: ata.toString(),
-      name, symbol, decimals,
-      supply: currentSupply,
-      maxsup: maxSupply,
-      feeBps, mintRevoked, freezeRevoked, updateRevoked,
-      sig: null,
-      loaded: true
+      return {sig:sig2,rM:false,rF:false,rU:false};
+    }).then(function(res){
+      tokens.push({mint:mint.toString(),pda:pda.toString(),ata:ata.toString(),name:name,sym:sym,dec:dec,sup:sup,msup:msup,fbps:fbps,rM:res.rM,rF:res.rF,rU:res.rU,sig:sig1});
+      toast('ok','All Done!','Token live on devnet','https://solscan.io/token/'+mint.toString()+'?cluster=devnet');
+      refreshWalletUI();
     });
-
-    renderTokenList();
-    document.getElementById('load-mint').value = '';
-    log('success','Token Loaded!', name + ' — supply: ' + currentSupply.toLocaleString());
-
-  } catch(e) {
-    log('error','Load Failed', e.message||e.toString());
-  }
+  }).catch(function(e){ console.error(e); toast('err','Failed',e.message||String(e)); }).then(function(){ busy(false); });
 }
 
-function renderTokenList() {
-  const el = document.getElementById('tokens-list');
-  if(!createdTokens.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">&#9672;</div><div class="empty-text">No tokens created this session.<br/>Create a token first.</div></div>`;
+// ── Inline amount input for mint/burn ─────────────────────────────
+function showAmountInput(cardId, action, onConfirm) {
+  // Remove any existing amount row
+  var existing = document.querySelectorAll('.amount-row.show');
+  existing.forEach(function(el){ el.classList.remove('show'); });
+
+  var rowId = 'ar-' + cardId;
+  var row = document.getElementById(rowId);
+  if (!row) return;
+
+  row.classList.add('show');
+  var inp = row.querySelector('input');
+  var confirmBtn = row.querySelector('.arc');
+  var cancelBtn = row.querySelector('.arx');
+
+  inp.value = '';
+  inp.placeholder = action === 'mint' ? 'Tokens to mint...' : 'Tokens to burn...';
+  inp.focus();
+
+  // Remove old listeners by cloning
+  var newConfirm = confirmBtn.cloneNode(true);
+  var newCancel = cancelBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+  newConfirm.addEventListener('click', function() {
+    var val = parseInt(inp.value);
+    if (!val || val <= 0) { inp.style.borderColor='var(--danger)'; return; }
+    row.classList.remove('show');
+    onConfirm(val);
+  });
+
+  newCancel.addEventListener('click', function() {
+    row.classList.remove('show');
+  });
+
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') newConfirm.click();
+    if (e.key === 'Escape') row.classList.remove('show');
+  });
+}
+
+// ── Mint More ─────────────────────────────────────────────────────
+function mintMore(mintAddr, pdaAddr, ataAddr, cardId) {
+  if (!wallet) { toast('err','Not Connected','Connect wallet first'); return; }
+  showAmountInput(cardId, 'mint', function(amount) {
+    toast('inf','Minting',amount.toLocaleString()+' tokens...');
+    var mint = new solanaWeb3.PublicKey(mintAddr);
+    var pda  = new solanaWeb3.PublicKey(pdaAddr);
+    var ata  = new solanaWeb3.PublicKey(ataAddr);
+    var pid  = new solanaWeb3.PublicKey(PROG);
+    var t22  = new solanaWeb3.PublicKey(T22);
+    var ap   = new solanaWeb3.PublicKey(ASSOC);
+    var sys  = solanaWeb3.SystemProgram.programId;
+    var disc = new Uint8Array(DISC.mintAdditional);
+    var data = cat(disc, e64(amount));
+    var ix = new solanaWeb3.TransactionInstruction({
+      programId: pid,
+      keys:[{pubkey:wallet,isSigner:true,isWritable:true},{pubkey:mint,isSigner:false,isWritable:true},{pubkey:pda,isSigner:false,isWritable:true},{pubkey:ata,isSigner:false,isWritable:true},{pubkey:t22,isSigner:false,isWritable:false},{pubkey:ap,isSigner:false,isWritable:false},{pubkey:sys,isSigner:false,isWritable:false}],
+      data:data
+    });
+    sendTx([ix]).then(function(sig) {
+      toast('ok','Minted!',amount.toLocaleString()+' tokens added','https://solscan.io/tx/'+sig+'?cluster=devnet');
+      var t=tokens.find(function(x){return x.mint===mintAddr;});
+      if (t){ t.sup+=amount; renderTokens(); }
+    }).catch(function(e){ toast('err','Mint Failed',e.message||String(e)); });
+  });
+}
+
+// ── Burn ──────────────────────────────────────────────────────────
+function burnTokens(mintAddr, ataAddr, cardId, decimals) {
+  if (!wallet) { toast('err','Not Connected','Connect wallet first'); return; }
+  showAmountInput(cardId, 'burn', function(amount) {
+    toast('inf','Burning',amount.toLocaleString()+' tokens...');
+    var mint    = new solanaWeb3.PublicKey(mintAddr);
+    var ataKey  = new solanaWeb3.PublicKey(ataAddr);
+    var t22     = new solanaWeb3.PublicKey(T22);
+    var rawAmt  = BigInt(amount) * BigInt(Math.pow(10, decimals||6));
+    // BurnChecked = instruction index 8, followed by amount u64 and decimals u8
+    var data = new Uint8Array(10);
+    data[0] = 8;
+    new DataView(data.buffer).setBigUint64(1, rawAmt, true);
+    data[9] = decimals||6;
+    var ix = new solanaWeb3.TransactionInstruction({
+      programId: t22,
+      keys:[{pubkey:ataKey,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:true},{pubkey:wallet,isSigner:true,isWritable:false}],
+      data:data
+    });
+    sendTx([ix]).then(function(sig) {
+      toast('ok','Burned!',amount.toLocaleString()+' tokens destroyed','https://solscan.io/tx/'+sig+'?cluster=devnet');
+      var t=tokens.find(function(x){return x.mint===mintAddr;});
+      if (t){ t.sup-=amount; renderTokens(); }
+    }).catch(function(e){ toast('err','Burn Failed',e.message||String(e)); });
+  });
+}
+
+// ── Load Token ────────────────────────────────────────────────────
+function loadToken() {
+  var ms = document.getElementById('lmint').value.trim();
+  if (!ms) { toast('err','Missing Input','Paste a mint address'); return; }
+  if (!wallet) { toast('err','Not Connected','Connect wallet first'); return; }
+  if (tokens.find(function(t){return t.mint===ms;})) { toast('inf','Already Loaded','Token already in list'); return; }
+  toast('inf','Loading','Fetching on-chain data...');
+  var mint, pdaKey, ataKey;
+  try { mint = new solanaWeb3.PublicKey(ms); } catch(e) { toast('err','Invalid Address','Not a valid pubkey'); return; }
+  getPDA(mint).then(function(p){ pdaKey=p; return getATA(mint,wallet); }).then(function(a){ ataKey=a; return conn.getAccountInfo(pdaKey); }).then(function(acc) {
+    if (!acc) { toast('err','Not Found','No TokenConfig PDA found. Was this created with this program?'); return; }
+    var d=acc.data; var v=new DataView(d.buffer,d.byteOffset); var o=8;
+    o+=32; o+=32;
+    var dec=d[o++];
+    var isn=Number(v.getBigUint64(o,true)); o+=8;
+    var msn=Number(v.getBigUint64(o,true)); o+=8;
+    var csn=Number(v.getBigUint64(o,true)); o+=8;
+    var fbp=v.getUint16(o,true); o+=2;
+    o+=8;
+    var rM=d[o++]===1; var rF=d[o++]===1; var rU=d[o++]===1;
+    tokens.push({mint:ms,pda:pdaKey.toString(),ata:ataKey.toString(),name:'Token',sym:ms.slice(0,4).toUpperCase(),dec:dec,sup:csn,msup:msn,fbps:fbp,rM:rM,rF:rF,rU:rU,sig:null,loaded:true});
+    renderTokens();
+    document.getElementById('lmint').value='';
+    toast('ok','Loaded!','Supply: '+csn.toLocaleString());
+  }).catch(function(e){ toast('err','Load Failed',e.message||String(e)); });
+}
+
+// ── Verify ────────────────────────────────────────────────────────
+function verifyToken() {
+  var ms = document.getElementById('vmint').value.trim();
+  if (!ms) { toast('err','Missing Input','Paste a mint address'); return; }
+  var mint;
+  try { mint = new solanaWeb3.PublicKey(ms); } catch(e) { toast('err','Invalid Address','Not a valid pubkey'); return; }
+  toast('inf','Fetching','Reading TokenConfig PDA...');
+  getPDA(mint).then(function(pda) {
+    return conn.getAccountInfo(pda).then(function(acc) {
+      if (!acc) { document.getElementById('vres').innerHTML='<div class="card"><div style="font-size:11px;color:var(--muted);">No TokenConfig PDA found. Token was not created with this program.</div></div>'; return; }
+      var d=acc.data; var v=new DataView(d.buffer,d.byteOffset); var o=8;
+      var cr=new solanaWeb3.PublicKey(d.slice(o,o+32)).toString(); o+=32;
+      var ma=new solanaWeb3.PublicKey(d.slice(o,o+32)).toString(); o+=32;
+      var dec=d[o++];
+      var isn=Number(v.getBigUint64(o,true)); o+=8;
+      var msn=Number(v.getBigUint64(o,true)); o+=8;
+      var csn=Number(v.getBigUint64(o,true)); o+=8;
+      var fbp=v.getUint16(o,true); o+=2; o+=8;
+      var rM=d[o++]===1; var rF=d[o++]===1; var rU=d[o++]===1;
+      document.getElementById('vres').innerHTML=
+        '<div class="card">'
+        +'<div class="ctitle">TokenConfig PDA</div>'
+        +'<div class="csub" style="word-break:break-all;">'+pda.toString()+'</div>'
+        +'<div class="tstats" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;">'
+        +'<div class="stat"><div class="slbl">Decimals</div><div class="sval">'+dec+'</div></div>'
+        +'<div class="stat"><div class="slbl">Current Supply</div><div class="sval">'+csn.toLocaleString()+'</div></div>'
+        +'<div class="stat"><div class="slbl">Transfer Fee</div><div class="sval">'+fbp/100+'%</div></div>'
+        +'</div>'
+        +'<div class="slabel">Authority Status</div>'
+        +'<div class="flags">'
+        +'<span class="flag '+(rM?'fr':'fa')+'">'+(rM?'Mint Revoked':'Mint Active')+'</span>'
+        +'<span class="flag '+(rF?'fr':'fa')+'">'+(rF?'Freeze Revoked':'Freeze Active')+'</span>'
+        +'<span class="flag '+(rU?'fr':'fa')+'">'+(rU?'Update Revoked':'Update Active')+'</span>'
+        +'</div>'
+        +'<div style="margin-top:14px;display:flex;gap:10px;">'
+        +'<a href="https://solscan.io/token/'+ma+'?cluster=devnet" target="_blank" class="tlink">View Token on Solscan</a>'
+        +'<a href="https://solscan.io/account/'+pda.toString()+'?cluster=devnet" target="_blank" class="tlink">View PDA Account</a>'
+        +'</div></div>';
+      toast('ok','Verified','TokenConfig fetched');
+    });
+  }).catch(function(e){ toast('err','Verify Failed',e.message); });
+}
+
+// ── Render Tokens ─────────────────────────────────────────────────
+function renderTokens() {
+  var el = document.getElementById('tlist');
+  if (!tokens.length) {
+    el.innerHTML='<div class="empty"><div class="ei">◈</div><div class="et">No tokens loaded.<br/>Create or load a token above.</div></div>';
     return;
   }
-  el.innerHTML=createdTokens.map(t=>`
-    <div class="token-card">
-      <div class="token-header">
-        <div class="token-name">${t.name}</div>
-        <div class="token-symbol">${t.symbol}</div>
-      </div>
-      <div class="token-stats">
-        <div class="stat"><div class="stat-label">Supply</div><div class="stat-value">${t.supply.toLocaleString()}</div></div>
-        <div class="stat"><div class="stat-label">Decimals</div><div class="stat-value">${t.decimals}</div></div>
-        <div class="stat"><div class="stat-label">Fee</div><div class="stat-value">${t.feeBps/100}%</div></div>
-      </div>
-      <div class="flags">
-        <span class="flag ${t.mintRevoked?'revoked':'active-flag'}">${t.mintRevoked?'&#10007; Mint Revoked':'&#10003; Mint Active'}</span>
-        <span class="flag ${t.freezeRevoked?'revoked':'active-flag'}">${t.freezeRevoked?'&#10007; Freeze Revoked':'&#10003; Freeze Active'}</span>
-        <span class="flag ${t.updateRevoked?'revoked':'active-flag'}">${t.updateRevoked?'&#10007; Update Revoked':'&#10003; Update Active'}</span>
-      </div>
-      <div class="token-actions" style="flex-wrap:wrap;gap:8px;">
-        ${t.sig?`<a href="https://solscan.io/tx/${t.sig}?cluster=devnet" target="_blank"><button class="btn btn-secondary" style="font-size:11px;padding:9px 16px;">Tx</button></a>`:''}
-        <a href="https://solscan.io/token/${t.mint}?cluster=devnet" target="_blank"><button class="btn btn-secondary" style="font-size:11px;padding:9px 16px;">Token</button></a>
-        ${!t.mintRevoked?`<button class="btn btn-secondary" style="font-size:11px;padding:9px 16px;border-color:var(--accent);color:var(--accent);" onclick="mintMore('${t.mint}','${t.pda}','${t.ata}')">+ Mint More</button>`:'<span style="font-size:10px;color:var(--muted);padding:9px 4px;">Mint Revoked</span>'}
-        <button class="btn btn-secondary" style="font-size:11px;padding:9px 16px;border-color:var(--danger);color:var(--danger);" onclick="burnTokens('${t.mint}','${t.ata}')">Burn</button>
-      </div>
-      <div style="margin-top:12px;font-size:9px;color:var(--muted);word-break:break-all;line-height:1.6;">${t.mint}</div>
-    </div>`).join('');
+  el.innerHTML='';
+  tokens.forEach(function(t, i) {
+    var cid = 'tc'+i;
+    var card = document.createElement('div');
+    card.className = 'tcard';
+    card.id = cid;
+
+    var txBtn = t.sig ? '<a href="https://solscan.io/tx/'+t.sig+'?cluster=devnet" target="_blank"><button class="btn btn-s">Tx</button></a>' : '';
+    var tkBtn = '<a href="https://solscan.io/token/'+t.mint+'?cluster=devnet" target="_blank"><button class="btn btn-s">Token</button></a>';
+    var mintBtn = t.rM ? '<span style="font-size:9px;color:var(--muted);padding:8px 4px;">Mint Revoked</span>' : '<button class="btn btn-g arc-mint-'+cid+'">+ Mint More</button>';
+    var burnBtn = '<button class="btn btn-d arc-burn-'+cid+'">Burn</button>';
+
+    card.innerHTML =
+      '<div class="th"><div class="tname">'+t.name+'</div><div class="tsym">'+t.sym+'</div></div>'
+      +'<div class="tstats">'
+      +'<div class="stat"><div class="slbl">Supply</div><div class="sval">'+t.sup.toLocaleString()+'</div></div>'
+      +'<div class="stat"><div class="slbl">Decimals</div><div class="sval">'+t.dec+'</div></div>'
+      +'<div class="stat"><div class="slbl">Fee</div><div class="sval">'+t.fbps/100+'%</div></div>'
+      +'</div>'
+      +'<div class="flags">'
+      +'<span class="flag '+(t.rM?'fr':'fa')+'">'+(t.rM?'Mint Revoked':'Mint Active')+'</span>'
+      +'<span class="flag '+(t.rF?'fr':'fa')+'">'+(t.rF?'Freeze Revoked':'Freeze Active')+'</span>'
+      +'<span class="flag '+(t.rU?'fr':'fa')+'">'+(t.rU?'Update Revoked':'Update Active')+'</span>'
+      +'</div>'
+      // Inline amount row - no modal, no fixed overlay
+      +'<div class="amount-row" id="ar-'+cid+'">'
+      +'<span class="albl">Amount:</span>'
+      +'<input type="number" min="1" placeholder="e.g. 100000"/>'
+      +'<button class="btn btn-p arc" style="padding:7px 14px;width:auto;">Confirm</button>'
+      +'<button class="btn btn-s arx" style="padding:7px 10px;width:auto;">✕</button>'
+      +'</div>'
+      +'<div class="tacts">'+txBtn+tkBtn+mintBtn+burnBtn+'</div>'
+      +'<div class="tmint">'+t.mint+'</div>';
+
+    el.appendChild(card);
+
+    // Attach event listeners
+    var mintCopy=t.mint, pdaCopy=t.pda, ataCopy=t.ata, decCopy=t.dec;
+
+    var mb = card.querySelector('.arc-mint-'+cid);
+    if (mb) {
+      mb.addEventListener('click', function() {
+        mintMore(mintCopy, pdaCopy, ataCopy, cid);
+      });
+    }
+
+    var bb = card.querySelector('.arc-burn-'+cid);
+    if (bb) {
+      bb.addEventListener('click', function() {
+        burnTokens(mintCopy, ataCopy, cid, decCopy);
+      });
+    }
+  });
 }
 
-function setBusy(busy, label='') {
-  const btn = document.getElementById('create-btn');
-  const sp  = document.getElementById('create-spinner');
-  const lbl = document.getElementById('create-label');
-  btn.disabled = busy;
-  sp.style.display = busy ? 'block' : 'none';
-  if(label) lbl.textContent = label;
-  else lbl.textContent = '&#9189; Deploy Token to Devnet';
+// ── Busy ──────────────────────────────────────────────────────────
+function busy(on, lbl) {
+  document.getElementById('cbtn').disabled = on;
+  document.getElementById('cspin').style.display = on ? 'block' : 'none';
+  document.getElementById('clbl').textContent = lbl || 'Deploy Token to Devnet';
 }
 
-let logN=0;
-function log(type,title,msg,link) {
-  const el = document.getElementById('status-log');
-  const icons={success:'&#10003;',error:'&#10007;',info:'&#9672;'};
-  const div=document.createElement('div');
-  div.className=`log-entry ${type}`;
-  div.innerHTML=`<div class="log-icon">${icons[type]||'·'}</div><div class="log-content"><div class="log-title">${title}</div>${msg?`<div class="log-msg">${msg}</div>`:''}${link?`<a href="${link}" target="_blank" class="log-link">&#8599; View on Solscan</a>`:''}</div>`;
-  el.appendChild(div);
-  setTimeout(()=>{div.style.opacity='0';setTimeout(()=>div.remove(),400);},9000);
-  while(el.children.length>4) el.removeChild(el.firstChild);
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(type, title, msg, link) {
+  var el = document.getElementById('toasts');
+  var d = document.createElement('div');
+  d.className = 'toast ' + (type==='ok'?'ok':type==='err'?'err':'inf');
+  var ico = type==='ok' ? '✓' : type==='err' ? '✗' : '◈';
+  d.innerHTML = '<div class="tico">'+ico+'</div><div><div class="ttitle">'+title+'</div>'
+    +(msg?'<div class="tmsg">'+msg+'</div>':'')
+    +(link?'<a href="'+link+'" target="_blank" class="tlink">View on Solscan</a>':'')
+    +'</div>';
+  el.appendChild(d);
+  setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.remove(); }, 400); }, 10000);
+  while (el.children.length > 4) el.removeChild(el.firstChild);
 }
 </script>
 </body>
